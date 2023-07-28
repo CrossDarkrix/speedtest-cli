@@ -1110,6 +1110,9 @@ class speedtest_cli(object):
                 sys.exit(0)
         return ''
 
-if __name__ == '__main__':
+def main():
     with speedtest_cli() as speedtest:
         print(speedtest)
+
+if __name__ == '__main__':
+    main()

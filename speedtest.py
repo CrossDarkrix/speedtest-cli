@@ -1111,8 +1111,11 @@ class speedtest_cli(object):
         return ''
 
 def main():
-    with speedtest_cli() as speedtest:
-        print(speedtest)
+    try:
+        with speedtest_cli() as speedtest:
+            print(speedtest)
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == '__main__':
     try:

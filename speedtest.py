@@ -91,61 +91,62 @@ class speedtest_cli(object):
 
     def to_utf8(self, v):
         return v
-    
+
     def _print(self, *args, **kwargs):
         if kwargs.get('file') == sys.stderr:
             kwargs['file'] = _py3_utf8_stderr
         else:
             kwargs['file'] = kwargs.get('file', _py3_utf8_stdout)
         _py3_print(*args, **kwargs)
+
     class SpeedtestException(Exception):
         pass
-    
+
     class SpeedtestCLIError(SpeedtestException):
         pass
-    
+
     class SpeedtestHTTPError(SpeedtestException):
         pass
-    
+
     class SpeedtestConfigError(SpeedtestException):
         pass
-    
+
     class SpeedtestServersError(SpeedtestException):
         pass
-    
+
     class ConfigRetrievalError(SpeedtestHTTPError):
         pass
-    
+
     class ServersRetrievalError(SpeedtestHTTPError):
         pass
-    
+
     class InvalidServerIDType(SpeedtestException):
         pass
-    
+
     class NoMatchedServers(SpeedtestException):
         pass
-    
+
     class SpeedtestMiniConnectFailure(SpeedtestException):
         pass
-    
+
     class InvalidSpeedtestMiniServer(SpeedtestException):
         pass
-    
+
     class ShareResultsConnectFailure(SpeedtestException):
         pass
-    
+
     class ShareResultsSubmitFailure(SpeedtestException):
         pass
-    
+
     class SpeedtestUploadTimeout(SpeedtestException):
         pass
-    
+
     class SpeedtestBestServerFailure(SpeedtestException):
         pass
-    
+
     class SpeedtestMissingBestServer(SpeedtestException):
         pass
-    
+
     def create_connection(self, address, timeout=_GLOBAL_DEFAULT_TIMEOUT, source_address=None):
         host, port = address
         err = None
@@ -170,7 +171,7 @@ class speedtest_cli(object):
         else:
             print(socket.error("getaddrinfo returns an empty list"))
             sys.exit(0)
-    
+ 
     class SpeedtestHTTPConnection(HTTPConnection):
         def __init__(self, *args, **kwargs):
             source_address = kwargs.pop('source_address', None)
@@ -179,7 +180,7 @@ class speedtest_cli(object):
             HTTPConnection.__init__(self, *args, **kwargs)
             self.source_address = source_address
             self.timeout = timeout
-    
+
         def connect(self):
             try:
                 self.sock = socket.create_connection((self.host, self.port), self.timeout, self.source_address)
@@ -195,7 +196,7 @@ class speedtest_cli(object):
             HTTPSConnection.__init__(self, *args, **kwargs)
             self.timeout = timeout
             self.source_address = source_address
-    
+
         def connect(self):
             try:
                 self.sock = socket.create_connection((self.host, self.port), self.timeout, self.source_address)
@@ -208,7 +209,7 @@ class speedtest_cli(object):
                     self.sock.server_hostname = self.host
                 except AttributeError:
                     pass
-        
+
     def _build_connection(self, connection, source_address, timeout, context=None):
         def inner(host, **kwargs):
             kwargs.update({
@@ -219,7 +220,7 @@ class speedtest_cli(object):
                 kwargs['context'] = context
             return connection(host, **kwargs)
         return inner
-    
+
     class SpeedtestHTTPHandler(AbstractHTTPHandler):
         def __init__(self, debuglevel=0, source_address=None, timeout=10):
             AbstractHTTPHandler.__init__(self, debuglevel)
@@ -228,21 +229,21 @@ class speedtest_cli(object):
         
         def http_open(self, req):
             return self.do_open(speedtest_cli()._build_connection(speedtest_cli().SpeedtestHTTPConnection, self.source_address, self.timeout), req)
-        
+
         http_request = AbstractHTTPHandler.do_request_
-    
+
     class SpeedtestHTTPSHandler(AbstractHTTPHandler):
         def __init__(self, debuglevel=0, context=None, source_address=None, timeout=10):
             AbstractHTTPHandler.__init__(self, debuglevel)
             self._context = context
             self.source_address = source_address
             self.timeout = timeout
-        
+
         def https_open(self, req):
             return self.do_open(speedtest_cli()._build_connection(speedtest_cli().SpeedtestHTTPSConnection, self.source_address, self.timeout, context=self._context), req)
-    
+
         https_request = AbstractHTTPHandler.do_request_
-    
+
     def build_opener(self, source_address=None, timeout=10):
         self.printer('Timeout set to %d' % timeout, debug=True)
         if source_address:
@@ -257,7 +258,7 @@ class speedtest_cli(object):
         for handler in handlers:
             opener.add_handler(handler)
         return opener
-    
+
     class GzipDecodedResponse(GZIP_BASE):
         def __init__(self, response):
             if not gzip:
@@ -272,21 +273,20 @@ class speedtest_cli(object):
                 self.io.write(chunk)
             self.io.seek(0)
             gzip.GzipFile.__init__(self, mode='rb', fileobj=self.io)
-    
+
         def close(self):
             try:
                 gzip.GzipFile.close(self)
             finally:
                 self.io.close()
-    
+
     def get_exception(self):
         return sys.exc_info()[1]
-    
+
     def distance(self, origin, destination):
         lat1, lon1 = origin
         lat2, lon2 = destination
         radius = 6371  # km
-        
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
         a = (math.sin(dlat / 2) * math.sin(dlat / 2) +
@@ -295,7 +295,7 @@ class speedtest_cli(object):
              math.sin(dlon / 2))
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         d = radius * c
-        
+
         return d
     
     def build_user_agent(self):
@@ -303,7 +303,7 @@ class speedtest_cli(object):
         user_agent = ' '.join(ua_tuple)
         self.printer('User-Agent: %s' % user_agent, debug=True)
         return user_agent
-    
+
     def build_request(self, url, data=None, headers=None, bump='0', secure=False):
         if not headers:
             headers = {}
@@ -320,7 +320,7 @@ class speedtest_cli(object):
         headers.update({'Cache-Control': 'no-cache'})
         self.printer('%s %s' % (('GET', 'POST')[bool(data)], final_url), debug=True)
         return Request(final_url, data=data, headers=headers)
-    
+
     def catch_request(self, request, opener=None):
         if opener:
             _open = opener.open
@@ -334,7 +334,7 @@ class speedtest_cli(object):
         except HTTP_ERRORS:
             e = self.get_exception()
             return None, e
-    
+
     def get_response_stream(self, response):
         try:
             getheader = response.headers.getheader
@@ -343,23 +343,23 @@ class speedtest_cli(object):
         if getheader('content-encoding') == 'gzip':
             return speedtest_cli().GzipDecodedResponse(response)
         return response
-    
+
     def get_attributes_by_tag_name(self, dom, tag_name):
         elem = dom.getElementsByTagName(tag_name)[0]
         return dict(list(elem.attributes.items()))
-    
+
     def print_dots(self, _):
         def inner(current, total, start=False, end=False):
             sys.stdout.write('.')
             if current + 1 == total and end is True:
                 sys.stdout.write('\n')
             sys.stdout.flush()
-        
+
         return inner
-    
+
     def do_nothing(*args, **kwargs):
         pass
-    
+
     class HTTPDownloader(threading.Thread):
         def __init__(self, i, request, start, timeout, opener=None):
             threading.Thread.__init__(self)
@@ -372,14 +372,17 @@ class speedtest_cli(object):
                 self._opener = opener.open
             else:
                 self._opener = urlopen
-    
+
         def run(self):
             concurrent.futures.ThreadPoolExecutor().submit(self.work).result()
-    
+
         def work(self):
             try:
                 if (timeit.default_timer() - self.start_time) <= self.timeout:
-                    f = self._opener(self.request)
+                    try:
+                        f = self._opener(self.request)
+                    except KeyboardInterrupt:
+                        pass
                     while (timeit.default_timer() - self.start_time) <= self.timeout:
                         self.result.append(len(f.read(10240)))
                         if self.result[-1] == 0:
@@ -389,7 +392,7 @@ class speedtest_cli(object):
                 pass
             except HTTP_ERRORS:
                 pass
-    
+
     class HTTPUploaderData(object):
         def __init__(self, length, start, timeout):
             self.length = length
@@ -397,7 +400,7 @@ class speedtest_cli(object):
             self.timeout = timeout
             self._data = None
             self.total = [0]
-        
+
         def pre_allocate(self):
             chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             multiplier = int(round(int(self.length) / 36.0))
@@ -406,13 +409,13 @@ class speedtest_cli(object):
                 self._data = IO(('content1=%s' % (chars * multiplier)[0:int(self.length) - 9]).encode())
             except MemoryError:
                 print(speedtest_cli().SpeedtestCLIError('Insufficient memory to pre-allocate upload data. Please \nuse --no-pre-allocate'))
-        
+
         @property
         def data(self):
             if not self._data:
                 self.pre_allocate()
             return self._data
-    
+
         def read(self, n=10240):
             if ((timeit.default_timer() - self.start) <= self.timeout):
                 chunk = self.data.read(n)
@@ -421,10 +424,10 @@ class speedtest_cli(object):
             else:
                 print(speedtest_cli().SpeedtestUploadTimeout())
                 sys.exit(0)
-    
+
         def __len__(self):
             return self.length
-    
+
     class HTTPUploader(threading.Thread):
         def __init__(self, i, request, start, size, timeout, opener=None):
             threading.Thread.__init__(self)
@@ -438,10 +441,10 @@ class speedtest_cli(object):
                 self._opener = opener.open
             else:
                 self._opener = urlopen
-    
+
         def run(self):
             concurrent.futures.ThreadPoolExecutor().submit(self.work).result()
-    
+
         def work(self):
             request = self.request
             try:
@@ -449,10 +452,23 @@ class speedtest_cli(object):
                     try:
                         f = self._opener(request)
                     except TypeError:
-                        request = speedtest_cli().build_request(self.request.get_full_url(), data=request.data.read(self.size))
-                        f = self._opener(request)
-                    f.read(11)
-                    f.close()
+                        try:
+                            request = speedtest_cli().build_request(self.request.get_full_url(), data=request.data.read(self.size))
+                        except KeyboardInterrupt:
+                            pass
+                        try:
+                            f = self._opener(request)
+                        except KeyboardInterrupt:
+                            pass
+                    except KeyboardInterrupt:
+                        pass
+                    try:
+                        f.read(11)
+                        f.close()
+                    except UnboundLocalError:
+                        pass
+                    except Exception:
+                        pass
                     self.result = sum(self.request.data.total)
                 else:
                     self.result = 0
@@ -460,7 +476,7 @@ class speedtest_cli(object):
                 self.result = sum(self.request.data.total)
             except HTTP_ERRORS:
                 self.result = 0
-    
+
     class SpeedtestResults(object):
         def __init__(self, download=0, upload=0, ping=0, server=None, client=None, opener=None, secure=False):
             self.download = download
@@ -480,10 +496,10 @@ class speedtest_cli(object):
             else:
                 self._opener = speedtest_cli().build_opener()
             self._secure = secure
-    
+
         def __repr__(self):
             return repr(self.dict())
-        
+
         def share(self):
             if self._share:
                 return self._share
@@ -509,7 +525,7 @@ class speedtest_cli(object):
                 print(speedtest_cli().ShareResultsSubmitFailure('Could not submit results to speedtest.net'))
                 sys.exit(0)
             self._share = 'https://www.speedtest.net/result/%s.png' % resultid[0]
-        
+
         def dict(self):
             return {'download': self.download, 'upload': self.upload, 'ping': self.ping, 'server': self.server, 'timestamp': self.timestamp, 'bytes_sent': self.bytes_sent, 'bytes_received': self.bytes_received, 'share': self._share, 'client': self.client}
         
@@ -549,13 +565,13 @@ class speedtest_cli(object):
             self.closest = []
             self._best = {}
             self.results = speedtest_cli().SpeedtestResults(client=self.config['client'], opener=self._opener, secure=secure)
-        
+
         @property
         def best(self):
             if not self._best:
                 self.get_best_server()
             return self._best
-        
+
         def get_config(self):
             headers = {}
             if gzip:
@@ -620,7 +636,7 @@ class speedtest_cli(object):
                 sys.exit(0)
             speedtest_cli().printer('Config:\n%r' % self.config, debug=True)
             return self.config
-        
+
         def get_servers(self, servers=None, exclude=None):
             if servers is None:
                 servers = []
@@ -709,7 +725,7 @@ class speedtest_cli(object):
                 print(speedtest_cli().NoMatchedServers())
                 sys.exit(0)
             return self.servers
-        
+
         def set_mini_server(self, server):
             urlparts = urlparse(server)
             name, ext = os.path.splitext(urlparts[2])
@@ -742,7 +758,7 @@ class speedtest_cli(object):
                 sys.exit(0)
             self.servers = [{'sponsor': 'Speedtest Mini', 'name': urlparts[1], 'd': 0, 'url': '%s/speedtest/upload.%s' % (url.rstrip('/'), extension[0]), 'latency': 0, 'id': 0}]
             return self.servers
-        
+
         def get_closest_servers(self, limit=5):
             if not self.servers:
                 self.get_servers()
@@ -756,12 +772,11 @@ class speedtest_cli(object):
                 break
             speedtest_cli().printer('Closest Servers:\n%r' % self.closest, debug=True)
             return self.closest
-        
+
         def get_best_server(self, servers=None):
             if not servers:
                 if not self.closest:
                     servers = self.get_closest_servers()
-                
                 else:
                     servers = self.closest
             if self._source_address:
@@ -850,7 +865,6 @@ class speedtest_cli(object):
     
             def cons(q, req_c):
                 concurrent.futures.ThreadPoolExecutor(os.cpu_count()*9999999).submit(consumer, q, req_c).result()
-            
             q = Queue(threads or self.config['threads']['upload'])
             prod_thread = threading.Thread(target=pro, daemon=True, args=(q, requests, request_count,))
             cons_thread = threading.Thread(target=cons, daemon=True, args=(q, request_count,))
@@ -868,7 +882,7 @@ class speedtest_cli(object):
             if self.results.download > 100000:
                 self.config['threads']['upload'] = 8
             return self.results.download
-        
+
         def upload(self, callback=do_nothing, pre_allocate=True, threads=None):
             sizes = [size for size in self.config['sizes']['upload'] for _ in range(0, self.config['counts']['upload'])]
             request_count = self.config['upload_max']
@@ -900,13 +914,13 @@ class speedtest_cli(object):
                     in_flight['threads'] -= 1
                     finished.append(thread.result)
                     callback(thread.i, request_count, end=True)
-    
+
             def pro(q, req, req_c):
                 concurrent.futures.ThreadPoolExecutor(os.cpu_count()*9999999).submit(producer, q, req, req_c).result()
-    
+
             def cons(q, req_c):
                 concurrent.futures.ThreadPoolExecutor(os.cpu_count()*9999999).submit(consumer, q, req_c).result()
-            
+
             q = Queue(threads or self.config['threads']['upload'])
             prod_thread = threading.Thread(target=pro, daemon=True, args=(q, requests, request_count,))
             cons_thread = threading.Thread(target=cons, daemon=True, args=(q, request_count,))
@@ -922,16 +936,16 @@ class speedtest_cli(object):
             self.results.bytes_sent = sum(finished)
             self.results.upload = ((self.results.bytes_sent / (stop - start)) * 8.0)
             return self.results.upload
-    
+
     def version(self):
         self.printer('speedtest-cli %s' % __version__)
         self.printer('Python %s' % sys.version.replace('\n', ''))
         sys.exit(0)
-    
+
     def csv_header(self, delimiter=','):
         self.printer(self.SpeedtestResults.csv_header(delimiter=delimiter))
         sys.exit(0)
-    
+
     def parse_args(self):
         description = ('Command line interface for testing internet bandwidth using  speedtest.net.\n------------------------------------------------------------\n--------------\nhttps://github.com/sivel/speedtest-cli')
         parser = ArgParser(description=description)
@@ -965,14 +979,14 @@ class speedtest_cli(object):
         else:
             args = options
         return args
-    
+
     def validate_optional_args(self, args):
         optional_args = {'json': ('json/simplejson python module', json), 'secure': ('SSL support', HTTPSConnection)}
         for arg, info in optional_args.items():
             if getattr(args, arg, False) and info[1] is None:
                 print(SystemExit('%s is not installed. --%s is unavailable' % (info[0], arg)))
                 sys.exit(0)
-    
+
     def printer(self, string, quiet=False, debug=False, error=False, **kwargs):
         if debug and not DEBUG:
             return
@@ -987,7 +1001,7 @@ class speedtest_cli(object):
             kwargs['file'] = sys.stderr
         if not quiet:
             self._print(out, **kwargs)
-    
+
     def shell(self):
         global DEBUG
         args = self.parse_args()
@@ -1043,7 +1057,7 @@ class speedtest_cli(object):
                         if e.errno != errno.EPIPE:
                             sys.exit(0)
             sys.exit(0)
-    
+
         self.printer('Testing from %(isp)s (%(ip)s)...' % speedtest.config['client'], quiet)
         if not args.mini:
             self.printer('Retrieving speedtest.net server list...', quiet)
@@ -1120,5 +1134,5 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except KeyboardInterrupt: # pythonista error fix.
+    except KeyboardInterrupt:
         pass

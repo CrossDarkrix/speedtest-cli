@@ -1115,4 +1115,7 @@ def main():
         print(speedtest)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt: # pythonista error fix.
+        pass

@@ -27,12 +27,15 @@ import platform
 import re
 import socket
 import sys
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 import threading
 import timeit
 import time
 import xml.parsers.expat
 from argparse import ArgumentParser as ArgParser, SUPPRESS as ARG_SUPPRESS
 from io import StringIO, BytesIO
+
 from urllib.request import urlopen, Request, HTTPError, AbstractHTTPHandler, ProxyHandler, HTTPDefaultErrorHandler, HTTPRedirectHandler, HTTPErrorProcessor, OpenerDirector
 from urllib.parse import urlparse
 from urllib.error import URLError
@@ -508,7 +511,7 @@ class speedtest_cli(object):
             upload = int(round(self.upload / 1000.0, 0))
             api_data = ['recommendedserverid=%s' % self.server['id'], 'ping=%s' % ping, 'screenresolution=', 'promo=', 'download=%s' % download, 'screendpi=', 'upload=%s' % upload, 'testmethod=http', 'hash=%s' % md5(('%s-%s-%s-%s' % (ping, upload, download, '297aae72')).encode()).hexdigest(), 'touchscreen=none', 'startmode=pingselect', 'accuracy=1', 'bytesreceived=%s' % self.bytes_received, 'bytessent=%s' % self.bytes_sent, 'serverid=%s' % self.server['id']]
             headers = {'Referer': 'http://c.speedtest.net/flash/speedtest.swf'}
-            request = speedtest_cli().build_request('https://www.speedtest.net/api/api.php', data='&'.join(api_data).encode(), headers=headers, secure=self._secure)
+            request = speedtest_cli().build_request('http://www.speedtest.net/api/api.php', data='&'.join(api_data).encode(), headers=headers, secure=self._secure)
             f, e = speedtest_cli().catch_request(request, opener=self._opener)
             if e:
                 print(speedtest_cli().ShareResultsConnectFailure(e))
@@ -524,7 +527,7 @@ class speedtest_cli(object):
             if not resultid or len(resultid) != 1:
                 print(speedtest_cli().ShareResultsSubmitFailure('Could not submit results to speedtest.net'))
                 sys.exit(0)
-            self._share = 'https://www.speedtest.net/result/%s.png' % resultid[0]
+            self._share = 'http://www.speedtest.net/result/%s.png' % resultid[0]
 
         def dict(self):
             return {'download': self.download, 'upload': self.upload, 'ping': self.ping, 'server': self.server, 'timestamp': self.timestamp, 'bytes_sent': self.bytes_sent, 'bytes_received': self.bytes_received, 'share': self._share, 'client': self.client}
@@ -576,7 +579,7 @@ class speedtest_cli(object):
             headers = {}
             if gzip:
                 headers['Accept-Encoding'] = 'gzip'
-            request = speedtest_cli().build_request('https://www.speedtest.net/speedtest-config.php', headers=headers, secure=self._secure)
+            request = speedtest_cli().build_request('http://www.speedtest.net/speedtest-config.php', headers=headers, secure=self._secure)
             uh, e = speedtest_cli().catch_request(request, opener=self._opener)
             if e:
                 print(speedtest_cli().ConfigRetrievalError(e))
@@ -650,7 +653,7 @@ class speedtest_cli(object):
                     except ValueError:
                         print(speedtest_cli().InvalidServerIDType('%s is an invalid server type, must be int' % s))
                         sys.exit(0)
-            urls = ['https://www.speedtest.net/speedtest-servers-static.php', 'https://c.speedtest.net/speedtest-servers-static.php', 'https://www.speedtest.net/speedtest-servers.php', 'https://c.speedtest.net/speedtest-servers.php']
+            urls = ['http://www.speedtest.net/speedtest-servers-static.php', 'http://c.speedtest.net/speedtest-servers-static.php', 'http://www.speedtest.net/speedtest-servers.php', 'http://c.speedtest.net/speedtest-servers.php']
             headers = {}
             if gzip:
                 headers['Accept-Encoding'] = 'gzip'
@@ -947,7 +950,7 @@ class speedtest_cli(object):
         sys.exit(0)
 
     def parse_args(self):
-        description = ('Command line interface for testing internet bandwidth using  speedtest.net.\n------------------------------------------------------------\n--------------\nhttps://github.com/sivel/speedtest-cli')
+        description = ('Command line interface for testing internet bandwidth using  speedtest.net.\n------------------------------------------------------------\n--------------\nhttp://github.com/sivel/speedtest-cli')
         parser = ArgParser(description=description)
         try:
             parser.add_argument = parser.add_option
@@ -1129,9 +1132,11 @@ def main():
         with speedtest_cli() as speedtest:
             print(speedtest)
     except KeyboardInterrupt:
-        pass
+    	pass
 
 if __name__ == '__main__':
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
     try:
         main()
     except KeyboardInterrupt:
